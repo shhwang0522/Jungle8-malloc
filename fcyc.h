@@ -10,7 +10,7 @@
 /* The test function takes a generic pointer as input */
 typedef void (*test_funct)(void *);
 
-/* Compute number of cycles used by test function f */
+/* Compute number of cycles used by test function f */ 
 double fcyc(test_funct f, void* argp);
 
 /*********************************************************

@@ -41,7 +41,6 @@ team_t team = {
 /* rounds up to the nearest multiple of ALIGNMENT */
 #define ALIGN(size) (((size) + (ALIGNMENT-1)) & ~0x7)
 
-
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
 /* from CSAPP */
@@ -49,6 +48,7 @@ team_t team = {
 #define DSIZE 8
 #define CHUNKSIZE (1<<12)
 static char * heap_listp;
+static void * next_fit = NULL;
 
 #define MAX(x,y) ((x)>(y)? (x):(y))
 
@@ -93,9 +93,11 @@ static void *coalesce(void *bp){
         PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0));
         bp = PREV_BLKP(bp);
     }
+    next_fit = bp;
     return bp;
     
 }
+
  static void *extend_heap(size_t words)
  {
     char *bp;
@@ -110,6 +112,7 @@ static void *coalesce(void *bp){
     PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1)); // 에필로그 블록
     return coalesce(bp); // 연결
  }
+
 int mm_init(void)
 {
     if((heap_listp = mem_sbrk(4*WSIZE)) == (void*)-1)
@@ -131,10 +134,19 @@ int mm_init(void)
  */
 static void *find_fit(size_t asize){
     void *bp;
+    if (next_fit == NULL){
     for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp)){
         if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp)))){
             return bp;
+            }
         }
+    }
+    else{
+    for (bp = next_fit; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp)){
+        if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp)))){
+            return bp;
+            }
+        }  
     }
     return NULL;
 
@@ -147,8 +159,8 @@ static void place(void *bp, size_t asize){
         bp = NEXT_BLKP(bp);
         PUT(HDRP(bp), PACK(csize-asize, 0));
         PUT(FTRP(bp), PACK(csize-asize, 0));
-
     }
+
     else {
         PUT(HDRP(bp), PACK(csize, 1));
         PUT(FTRP(bp), PACK(csize, 1));
@@ -184,7 +196,7 @@ void *mm_malloc(size_t size)
 void mm_free(void *bp)
 {
     size_t size = GET_SIZE(HDRP(bp));  
-
+    
     PUT(HDRP(bp), PACK(size, 0));  // 단순히 0으로 바꾸는 것으로 free가 된다.
     PUT(FTRP(bp), PACK(size, 0));  // 단순히 0으로 바꾸는 것으로 free가 된다.
     coalesce(bp);                   // 앞뒤연결

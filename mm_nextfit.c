@@ -43,19 +43,23 @@ team_t team = {
 
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
-/* from CSAPP */
+
+
+
+/* macros from CSAPP */
+static char * heap_listp;
+static void * next_fit = NULL; // implicit, next_fit 쓸때 켜기
+
 #define WSIZE 4
 #define DSIZE 8
 #define CHUNKSIZE (1<<12)
-static char * heap_listp;
-static void * next_fit = NULL;
 
 #define MAX(x,y) ((x)>(y)? (x):(y))
 
 #define PACK(size, alloc) ((size) | (alloc))
 
 #define GET(p) (*(unsigned int *)(p))
-#define PUT(p,val) (*(unsigned int *)(p) = (val))
+#define PUT(p, val) (*(unsigned int *)(p) = (unsigned int)(val)) 
 
 #define GET_SIZE(p) (GET(p) & ~0x7)
 #define GET_ALLOC(p) (GET(p) & 0x1)
@@ -65,6 +69,7 @@ static void * next_fit = NULL;
 
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char*)(bp)-WSIZE)))
 #define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char*)(bp)-DSIZE)))
+
 /* 
  * mm_init - initialize the malloc package.
  */
@@ -95,7 +100,6 @@ static void *coalesce(void *bp){
     }
     next_fit = bp;
     return bp;
-    
 }
 
  static void *extend_heap(size_t words)

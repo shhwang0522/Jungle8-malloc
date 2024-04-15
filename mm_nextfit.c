@@ -43,9 +43,6 @@ team_t team = {
 
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
-
-
-
 /* macros from CSAPP */
 static char * heap_listp;
 static void * next_fit = NULL; // implicit, next_fit 쓸때 켜기

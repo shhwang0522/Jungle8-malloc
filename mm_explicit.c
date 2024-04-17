@@ -252,13 +252,15 @@ static void *coalesce(void *bp){
  */
 void *mm_realloc(void *ptr, size_t size)
 {
-    /*
     void *oldptr = ptr;
+    void *bp;
     void *newptr;
     size_t copySize; //oldsize of block
-    size_t asize;
+    size_t asize;  // size는 말록용, asize는 블록 단위 크기로 조정용
+
     if (size == 0)
         return NULL;
+    
     if (size <= DSIZE)
         asize = 2*DSIZE;
     else
@@ -267,38 +269,71 @@ void *mm_realloc(void *ptr, size_t size)
     copySize = GET_SIZE(HDRP(oldptr));
 
     if (asize <= copySize){
-        PUT(HDRP(oldptr), PACK(copySize, 0));  // 단순히 0으로 바꾸는 것으로 free가 된다.
-        PUT(FTRP(oldptr), PACK(copySize, 0));  // 단순히 0으로 바꾸는 것으로 free가 된다.
-        place(oldptr, asize);
         return oldptr;
     }
-    else
-    {
-    newptr = mm_malloc(size);
-    if (newptr == NULL)
-      return NULL;
-   
-    memcpy(newptr, oldptr, copySize);
-    mm_free(oldptr);
-    return newptr;
+    else {
+
+        /* 뒷 가용 블록이랑 합치는 코드 (완성) */
+        if (GET_ALLOC(HDRP(NEXT_BLKP(oldptr))) == 0 && (GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + copySize) >= asize) {
+                splice_free_block((NEXT_BLKP(oldptr)));
+                size = GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + copySize;
+                PUT(HDRP(oldptr), PACK(size, 1));
+                PUT(FTRP(oldptr), PACK(size, 1));
+
+
+                /* 합치고 나서 분할 하는 코드 (완성) */
+                if (GET_SIZE(HDRP(NEXT_BLKP(oldptr))) != 0){
+                    if ((size - asize) >= (2 * DSIZE)) 
+                    {
+                        PUT(HDRP(oldptr), PACK(asize, 1)); 
+                        PUT(FTRP(oldptr), PACK(asize, 1));
+                        bp = NEXT_BLKP(oldptr); 
+                        PUT(HDRP(bp), PACK((size - asize), 0)); 
+                        PUT(FTRP(bp), PACK((size - asize), 0));
+                        add_free_block(bp); 
+                    }
+                }
+
+
+                return oldptr;
+            }
+            
+
+        /* 앞 가용 블록이랑 합치는 코드 (완성) */
+        if (GET_ALLOC(HDRP(PREV_BLKP(oldptr))) == 0 && GET_SIZE(HDRP(PREV_BLKP(oldptr))) + copySize >= asize){
+                splice_free_block((PREV_BLKP(oldptr)));
+                size = GET_SIZE(HDRP(PREV_BLKP(oldptr)))+ copySize;
+                bp = PREV_BLKP(oldptr);
+                memmove(bp, oldptr, asize);
+                PUT(HDRP(bp), PACK(size, 1));
+                PUT(FTRP(bp), PACK(size, 1));
+
+
+                // /* 합치고 나서 분할 하는 코드 (완성) */
+                // if ((size - asize) >= (2 * DSIZE)) 
+                // {
+                //     PUT(HDRP(bp), PACK(asize, 1)); 
+                //     PUT(FTRP(bp), PACK(asize, 1));
+                //     newptr = NEXT_BLKP(bp); 
+                //     PUT(HDRP(newptr), PACK((size - asize), 0)); 
+                //     PUT(FTRP(newptr), PACK((size - asize), 0));
+                //     add_free_block(newptr);
+                // }
+
+                
+                return bp;
+        }
+
+        
+
+        else {
+            newptr = mm_malloc(size);
+            if (newptr == NULL)
+                return NULL;
+        
+            memcpy(newptr, oldptr, copySize);
+            mm_free(oldptr);
+            return newptr;
+        }
     }
-    내가 구현해본 재활용 realloc, no score up
-     */
-    
-    void *oldptr = ptr;
-    void *newptr;
-    size_t copySize;
-
-    newptr = mm_malloc(size);
-    if (newptr == NULL)
-      return NULL;
-
-    copySize = GET_SIZE(HDRP(oldptr));
-
-    if (size < copySize)
-      copySize = size;
-
-    memcpy(newptr, oldptr, copySize);
-    mm_free(oldptr);
-    return newptr;
 }

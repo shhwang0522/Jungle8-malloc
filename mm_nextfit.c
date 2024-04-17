@@ -208,36 +208,6 @@ void mm_free(void *bp)
  */
 void *mm_realloc(void *ptr, size_t size)
 {
-    // void *oldptr = ptr;
-    // void *newptr;
-    // size_t copySize; //oldsize of block
-    // size_t asize;
-    // if (size == 0)
-    //     return NULL;
-    // if (size <= DSIZE)
-    //     asize = 2*DSIZE;
-    // else
-    //     asize = DSIZE * ((size + (DSIZE) + (DSIZE-1)) / DSIZE);
-
-    // copySize = GET_SIZE(HDRP(oldptr));
-
-    // if (asize <= copySize){
-    //     PUT(HDRP(oldptr), PACK(copySize, 0));  // 단순히 0으로 바꾸는 것으로 free가 된다.
-    //     PUT(FTRP(oldptr), PACK(copySize, 0));  // 단순히 0으로 바꾸는 것으로 free가 된다.
-    //     place(oldptr, asize);
-    //     return oldptr;
-    // }
-    // else
-    // {
-    // newptr = mm_malloc(size);
-    // if (newptr == NULL)
-    //   return NULL;
-   
-    // memcpy(newptr, oldptr, copySize);
-    // mm_free(oldptr);
-    // return newptr;
-    // }
-    // 내가 구현해본 재활용 realloc, no score up
     
     void *oldptr = ptr;
     void *newptr;

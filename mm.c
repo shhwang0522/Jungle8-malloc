@@ -75,6 +75,8 @@ int mm_init(void)
         return -1;
     // if (extend_heap(CHUNKSIZE / WSIZE) == NULL)
     //     return -1;
+
+    
     return 0;
 }
 
@@ -97,7 +99,6 @@ void *mm_malloc(size_t size)
         return bp;        
     }
 
-    
     if ((bp = extend_heap(asize/WSIZE)) == NULL)
         return NULL;
     place(bp, asize);
@@ -112,14 +113,14 @@ void mm_free(void *bp)
     coalesce(bp);
 }
 
-
 void *mm_realloc(void *ptr, size_t size)
 {
     void *oldptr = ptr;
-    void * bp;
+    void *bp;
     void *newptr;
     size_t copySize; //oldsize of block
-    size_t asize;  // size는 말록용, asize는 이미 있는 블록 조정용
+    size_t asize;  // size는 말록용, asize는 블록 단위 크기로 조정용
+
     if (size == 0)
         return NULL;
     
@@ -134,49 +135,60 @@ void *mm_realloc(void *ptr, size_t size)
         return oldptr;
     }
     else {
+
+        /* 뒷 가용 블록이랑 합치는 코드 (완성) */
         if (GET_ALLOC(HDRP(NEXT_BLKP(oldptr))) == 0 && (GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + copySize) >= asize) {
-            
                 splice_free_block((NEXT_BLKP(oldptr)));
                 size = GET_SIZE(HDRP(NEXT_BLKP(oldptr))) + copySize;
                 PUT(HDRP(oldptr), PACK(size, 1));
                 PUT(FTRP(oldptr), PACK(size, 1));
 
 
-                // /* 분할 하는 코드 */
-                // if ((size - asize) >= (2 * DSIZE)) 
-                // {
-                //     PUT(HDRP(oldptr), PACK(asize, 1)); 
-                //     PUT(FTRP(oldptr), PACK(asize, 1));
-                //     bp = NEXT_BLKP(oldptr); 
-                //     PUT(HDRP(bp), PACK((size - asize), 0)); 
-                //     PUT(FTRP(bp), PACK((size - asize), 0));
-                //     add_free_block(bp); 
-                // }
-                // else
-                // {
-                //     PUT(HDRP(oldptr), PACK(size, 1)); 
-                //     PUT(FTRP(oldptr), PACK(size, 1));
-
+                // /* 합치고 나서 분할 하는 코드 (완성) */
+                // if (GET_SIZE(HDRP(NEXT_BLKP(oldptr))) != 0){
+                //     if ((size - asize) >= (2 * DSIZE)) 
+                //     {
+                //         PUT(HDRP(oldptr), PACK(asize, 1)); 
+                //         PUT(FTRP(oldptr), PACK(asize, 1));
+                //         bp = NEXT_BLKP(oldptr); 
+                //         PUT(HDRP(bp), PACK((size - asize), 0)); 
+                //         PUT(FTRP(bp), PACK((size - asize), 0));
+                //         add_free_block(bp); 
+                //     }
                 // }
 
 
                 return oldptr;
             }
+            
 
-        // else if (GET_ALLOC(HDRP(PREV_BLKP(oldptr))) == 0 && (GET_SIZE(HDRP(PREV_BLKP(oldptr))) + copySize) >= asize){
-        //         printf("있다\n");
+        // /* 앞 가용 블록이랑 합치는 코드 (완성) */
+        // if (GET_ALLOC(HDRP(PREV_BLKP(oldptr))) == 0 && GET_SIZE(HDRP(PREV_BLKP(oldptr))) + copySize >= asize){
         //         splice_free_block((PREV_BLKP(oldptr)));
-        //         size = GET_SIZE(HDRP(PREV_BLKP(oldptr))) + copySize;
+        //         size = GET_SIZE(HDRP(PREV_BLKP(oldptr)))+ copySize;
         //         bp = PREV_BLKP(oldptr);
+        //         memmove(bp, oldptr, asize);
         //         PUT(HDRP(bp), PACK(size, 1));
         //         PUT(FTRP(bp), PACK(size, 1));
-        //         printf("있다2\n");
-        //         memcpy(bp, oldptr, asize);
-        //         printf("있다3\n");
+
+
+        //         // /* 합치고 나서 분할 하는 코드 (완성) */
+        //         // if ((size - asize) >= (2 * DSIZE)) 
+        //         // {
+        //         //     PUT(HDRP(bp), PACK(asize, 1)); 
+        //         //     PUT(FTRP(bp), PACK(asize, 1));
+        //         //     newptr = NEXT_BLKP(bp); 
+        //         //     PUT(HDRP(newptr), PACK((size - asize), 0)); 
+        //         //     PUT(FTRP(newptr), PACK((size - asize), 0));
+        //         //     add_free_block(newptr);
+        //         // }
+
+                
         //         return bp;
         // }
 
         
+
         else {
             newptr = mm_malloc(size);
             if (newptr == NULL)
@@ -201,8 +213,8 @@ static void *extend_heap(size_t words)
     PUT(HDRP(bp), PACK(size, 0));         
     PUT(FTRP(bp), PACK(size, 0));         
     PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1)); 
-    
-    return coalesce(bp); 
+
+    return coalesce(bp);
 }
 
 static void *coalesce(void *bp)
@@ -257,7 +269,7 @@ static void *find_fit(size_t asize)
                 return bp;
             bp = GET_SUCC(bp); 
         }
-        class += 1;
+        class ++;
     }
     return NULL;
 }
@@ -299,7 +311,6 @@ static void splice_free_block(void *bp)
     if (GET_SUCC(bp) != NULL) 
         GET_PRED(GET_SUCC(bp)) = GET_PRED(bp);
 }
-
 
 static void add_free_block(void *bp)
 {
